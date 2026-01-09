@@ -6,6 +6,8 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -24,15 +26,12 @@ public class Permission {
     @Column(name = "description")
     private String description;
 
-    @ColumnDefault("0")
-    @Column(name = "is_deleted")
-    private Boolean isDeleted;
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 
-    @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at")
     private Instant createdAt;
 
-    @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "updated_at")
     private Instant updatedAt;
 
@@ -41,5 +40,8 @@ public class Permission {
 
     @Column(name = "updated_by", length = 50)
     private String updatedBy;
+
+    @OneToMany(mappedBy = "permission")
+    private Set<RolePermission> rolePermissions = new LinkedHashSet<>();
 
 }

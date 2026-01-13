@@ -1,9 +1,6 @@
 package com.kjt.springsecurity.security;
 
-import com.kjt.springsecurity.service.CustomUserDetailsService;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,7 +36,7 @@ public class JwtTokenProvider {
         Date expiryDate = new Date(now.getTime() + expirationMs);
         String username = authentication.getName();
         // Tạo và trả về JWT từ thông tin người dùng
-        return io.jsonwebtoken.Jwts.builder()
+        return Jwts.builder()
                 .setSubject(username)
                 .claim("roles", authentication.getAuthorities()
                         .stream()
@@ -47,23 +44,23 @@ public class JwtTokenProvider {
                         .toList())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(getSigningKey(), io.jsonwebtoken.SignatureAlgorithm.HS512)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
     public String generateRefreshToken(String username) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshExpirationMs);
 
-        return io.jsonwebtoken.Jwts.builder()
+        return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(getSigningKey(), io.jsonwebtoken.SignatureAlgorithm.HS512)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
 
     public String getUsernameFromToken(String token){
-        return io.jsonwebtoken.Jwts.parserBuilder()
+        return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
@@ -72,17 +69,17 @@ public class JwtTokenProvider {
     }
 
     public String getRoleFromToken(String token){
-        return (String) io.jsonwebtoken.Jwts.parserBuilder()
+        return (String) Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
-                .get("role");
+                .get("roles");
     }
 
     public boolean validateToken(String token) {
         try {
-            io.jsonwebtoken.Jwts.parserBuilder()
+            Jwts.parserBuilder()
                     .setSigningKey(getSigningKey())
                     .build()
                     .parseClaimsJws(token);

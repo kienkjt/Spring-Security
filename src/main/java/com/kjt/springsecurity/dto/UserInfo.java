@@ -1,17 +1,18 @@
 package com.kjt.springsecurity.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+
+import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-@Setter
-public class RegistrationDto {
+@Data
+public class UserInfo {
+    private Long id;
     private String username;
-    private String password;
-    private String confirmPassword;
     private String email;
+    private Set<String> roles;
+    private Set<String> permissions;
 }

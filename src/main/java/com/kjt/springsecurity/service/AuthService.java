@@ -1,10 +1,10 @@
 package com.kjt.springsecurity.service;
 
+import com.kjt.springsecurity.dto.AuthResponse;
 import com.kjt.springsecurity.dto.LoginDto;
 import com.kjt.springsecurity.dto.RegistrationDto;
-import com.kjt.springsecurity.entity.User;
 
 public interface AuthService {
-    User register(RegistrationDto registrationDto);
-    User login(LoginDto loginDto);
+    void register(RegistrationDto registrationDto);
+    AuthResponse login(LoginDto loginDto);
 }

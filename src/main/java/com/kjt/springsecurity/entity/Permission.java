@@ -3,7 +3,6 @@ package com.kjt.springsecurity.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 import java.util.LinkedHashSet;
@@ -22,7 +21,7 @@ public class Permission {
     @Column(name = "name", nullable = false, length = 50)
     private String name;
 
-    @Lob
+
     @Column(name = "description")
     private String description;
 

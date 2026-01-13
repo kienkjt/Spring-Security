@@ -1,13 +1,12 @@
 package com.kjt.springsecurity.controller;
 
+import com.kjt.springsecurity.dto.AuthResponse;
+import com.kjt.springsecurity.dto.LoginDto;
 import com.kjt.springsecurity.dto.RegistrationDto;
-import com.kjt.springsecurity.entity.User;
-import com.kjt.springsecurity.repository.UserRepository;
 import com.kjt.springsecurity.service.AuthService;
 import com.kjt.springsecurity.util.APIResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +17,7 @@ public class AuthController {
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
+
     @PostMapping("/register")
     public ResponseEntity<APIResponse> register(@RequestBody RegistrationDto registrationDto) {
         try {
@@ -27,6 +27,17 @@ public class AuthController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(APIResponse.createFailureResponse(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<APIResponse> login(@RequestBody LoginDto loginDto) {
+        try {
+            AuthResponse response = authService.login(loginDto);
+            return ResponseEntity.ok(APIResponse.success(response, "Login successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(APIResponse.createFailureResponse("Login failed: " + e.getMessage()));
         }
     }
 

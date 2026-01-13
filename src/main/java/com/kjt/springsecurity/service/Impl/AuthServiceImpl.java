@@ -18,7 +18,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public User register(RegistrationDto registrationDto) {
+    public void register(RegistrationDto registrationDto) {
         User user = new User();
         if(registrationDto.getUsername() == null || registrationDto.getPassword() == null){
             throw new IllegalArgumentException("Username hoặc password không được để trống");
@@ -34,7 +34,6 @@ public class AuthServiceImpl implements AuthService {
         user.setUsername(registrationDto.getUsername());
         user.setPassword(registrationDto.getPassword());
         userRepository.save(user);
-        return user;
     }
 
     @Override

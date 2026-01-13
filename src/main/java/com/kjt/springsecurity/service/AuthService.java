@@ -5,6 +5,6 @@ import com.kjt.springsecurity.dto.RegistrationDto;
 import com.kjt.springsecurity.entity.User;
 
 public interface AuthService {
-    User register(RegistrationDto registrationDto);
+    void register(RegistrationDto registrationDto);
     User login(LoginDto loginDto);
 }

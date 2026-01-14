@@ -45,15 +45,14 @@ public class User {
     @Column(name = "updated_by", length = 50)
     private String updatedBy;
 
-    // ABAC Attributes
     @Column(name = "department", length = 50)
     private String department; // e.g., "IT", "HR", "FINANCE"
 
     @Column(name = "position", length = 50)
-    private String position; // e.g., "EMPLOYEE", "MANAGER", "DIRECTOR"
+    private String position; // Vị trí "EMPLOYEE", "MANAGER", "DIRECTOR"
 
     @Column(name = "clearance_level", nullable = false)
-    private Integer clearanceLevel = 1; // 1-5, higher = more access
+    private Integer clearanceLevel = 1; // Mức độ 1-5
 
     @OneToMany(mappedBy = "user")
     private Set<UserRole> userRoles = new LinkedHashSet<>();

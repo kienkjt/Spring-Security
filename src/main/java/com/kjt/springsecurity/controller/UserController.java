@@ -22,11 +22,13 @@ public class UserController {
         this.userRepository = userRepository;
         this.userService = userService;
     }
+
     @GetMapping("/all")
     public List<User> findAll() {
         return userRepository.findAll();
     }
-    @GetMapping("my-profile")
+
+    @GetMapping("/my-profile")
     public ResponseEntity<Optional<User>> findByUsername(@RequestParam(value = "username") String username) {
         Optional<User> user = userService.findByUsername(username);
         return ResponseEntity.ok(user);

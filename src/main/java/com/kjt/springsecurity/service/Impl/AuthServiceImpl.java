@@ -26,7 +26,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
 
     public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager,
-                           JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder) {
+            JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -55,6 +55,9 @@ public class AuthServiceImpl implements AuthService {
         user.setUsername(registrationDto.getUsername());
         user.setPassword(passwordEncoder.encode(registrationDto.getPassword()));
         user.setEmail(registrationDto.getEmail());
+        user.setDepartment("GENERAL"); // Default department
+        user.setPosition("EMPLOYEE"); // Default position
+        user.setClearanceLevel(1); // Default clearance level
         user.setIsActive(true);
         user.setIsDeleted(false);
         user.setCreatedAt(Instant.now());
@@ -66,8 +69,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginDto loginDto) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword())
-        );
+                new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 

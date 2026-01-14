@@ -2,33 +2,22 @@ package com.kjt.springsecurity.service.Impl;
 
 import com.kjt.springsecurity.dto.PolicyDto;
 import com.kjt.springsecurity.entity.Policy;
-import com.kjt.springsecurity.entity.User;
-import com.kjt.springsecurity.entity.Document;
 import com.kjt.springsecurity.enums.PolicyEffect;
 import com.kjt.springsecurity.repository.PolicyRepository;
-import com.kjt.springsecurity.repository.UserRepository;
-import com.kjt.springsecurity.repository.DocumentRepository;
 import com.kjt.springsecurity.service.PolicyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class PolicyServiceImpl implements PolicyService {
 
     private final PolicyRepository policyRepository;
-    private final UserRepository userRepository;
-    private final DocumentRepository documentRepository;
 
-    public PolicyServiceImpl(PolicyRepository policyRepository,
-            UserRepository userRepository,
-            DocumentRepository documentRepository) {
+    public PolicyServiceImpl(PolicyRepository policyRepository) {
         this.policyRepository = policyRepository;
-        this.userRepository = userRepository;
-        this.documentRepository = documentRepository;
     }
 
     @Override
@@ -104,123 +93,8 @@ public class PolicyServiceImpl implements PolicyService {
     @Override
     @Transactional(readOnly = true)
     public boolean checkAccess(String resourceType, String action, Long userId, Long resourceId) {
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null)
-            return false;
-
-        // Get applicable policies
-        List<Policy> policies = policyRepository.findApplicablePolicies(resourceType, action);
-        if (policies.isEmpty())
-            return false;
-
-        // For DOCUMENT resource type
-        if ("DOCUMENT".equals(resourceType) && resourceId != null) {
-            Document document = documentRepository.findById(resourceId).orElse(null);
-            if (document == null)
-                return false;
-
-            return evaluateDocumentPolicies(policies, user, document);
-        }
-
-        return false;
-    }
-
-    private boolean evaluateDocumentPolicies(List<Policy> policies, User user, Document document) {
-        boolean hasAllowPolicy = false;
-
-        for (Policy policy : policies) {
-            if (evaluatePolicy(policy, user, document)) {
-                if (policy.getEffect() == PolicyEffect.DENY) {
-                    return false; // Deny overrides
-                }
-                if (policy.getEffect() == PolicyEffect.ALLOW) {
-                    hasAllowPolicy = true;
-                }
-            }
-        }
-
-        return hasAllowPolicy;
-    }
-
-    private boolean evaluatePolicy(Policy policy, User user, Document document) {
-        Map<String, Object> conditions = policy.getConditions();
-        if (conditions == null || conditions.isEmpty()) {
-            return true;
-        }
-
-        // Simple condition evaluation
-        for (Map.Entry<String, Object> entry : conditions.entrySet()) {
-            String key = entry.getKey();
-            Object expectedValue = entry.getValue();
-
-            if (!evaluateCondition(key, expectedValue, user, document)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private boolean evaluateCondition(String key, Object expectedValue, User user, Document document) {
-        Object actualValue = getAttributeValue(key, user, document);
-
-        if (expectedValue instanceof String) {
-            String expected = (String) expectedValue;
-
-            // Handle comparison operators
-            if (expected.startsWith(">=")) {
-                return compareNumeric(actualValue, expected.substring(2).trim(), ">=");
-            } else if (expected.startsWith("<=")) {
-                return compareNumeric(actualValue, expected.substring(2).trim(), "<=");
-            } else if (expected.equals(actualValue)) {
-                return true;
-            }
-        }
-
-        return expectedValue != null && expectedValue.equals(actualValue);
-    }
-
-    private Object getAttributeValue(String key, User user, Document document) {
-        String[] parts = key.split("\\.");
-        if (parts.length != 2)
-            return null;
-
-        String category = parts[0];
-        String attribute = parts[1];
-
-        if ("user".equals(category)) {
-            return switch (attribute) {
-                case "id" -> user.getId();
-                case "department" -> user.getDepartment();
-                case "position" -> user.getPosition();
-                case "clearanceLevel" -> user.getClearanceLevel();
-                default -> null;
-            };
-        } else if ("resource".equals(category)) {
-            return switch (attribute) {
-                case "ownerId" -> document.getOwner().getId();
-                case "department" -> document.getDepartment();
-                case "classificationLevel" -> document.getClassificationLevel();
-                default -> null;
-            };
-        }
-
-        return null;
-    }
-
-    private boolean compareNumeric(Object actual, String expected, String operator) {
-        try {
-            double actualNum = Double.parseDouble(String.valueOf(actual));
-            double expectedNum = Double.parseDouble(expected);
-
-            return switch (operator) {
-                case ">=" -> actualNum >= expectedNum;
-                case "<=" -> actualNum <= expectedNum;
-                default -> false;
-            };
-        } catch (NumberFormatException e) {
-            return false;
-        }
+        // This method is now handled by PolicyEvaluatorService
+        throw new UnsupportedOperationException("Use PolicyEvaluatorService instead");
     }
 
     private PolicyDto toDto(Policy policy) {

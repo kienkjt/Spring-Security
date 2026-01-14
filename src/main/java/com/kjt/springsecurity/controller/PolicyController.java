@@ -25,7 +25,7 @@ public class PolicyController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Create a new policy", description = "Admin only - Creates a new ABAC policy")
+    @Operation(summary = "Tạo chính sách mới", description = "Chỉ dành cho Admin - Tạo chính sách ABAC mới")
     public ResponseEntity<APIResponse<PolicyDto>> createPolicy(@RequestBody PolicyDto dto) {
         try {
             PolicyDto created = policyService.createPolicy(dto);
@@ -39,7 +39,7 @@ public class PolicyController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Get policy by ID", description = "Admin only - Retrieves a specific policy")
+    @Operation(summary = "Lấy chính sách theo ID", description = "Chỉ dành cho Admin - Truy xuất chính sách cụ thể")
     public ResponseEntity<APIResponse<PolicyDto>> getPolicy(@PathVariable Long id) {
         try {
             PolicyDto policy = policyService.getPolicy(id);
@@ -50,9 +50,9 @@ public class PolicyController {
         }
     }
 
-    @GetMapping
+    @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Get all policies", description = "Admin only - Lists all policies")
+    @Operation(summary = "Lấy tất cả chính sách", description = "Chỉ dành cho Admin - Liệt kê tất cả các chính sách")
     public ResponseEntity<APIResponse<List<PolicyDto>>> getAllPolicies() {
         try {
             List<PolicyDto> policies = policyService.getAllPolicies();
@@ -65,7 +65,7 @@ public class PolicyController {
     }
 
     @GetMapping("/active")
-    @Operation(summary = "Get active policies", description = "Lists all active policies")
+    @Operation(summary = "Lấy các chính sách đang hoạt động", description = "Liệt kê tất cả các chính sách đang hoạt động")
     public ResponseEntity<APIResponse<List<PolicyDto>>> getActivePolicies() {
         try {
             List<PolicyDto> policies = policyService.getAllPolicies();
@@ -79,7 +79,7 @@ public class PolicyController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Update policy", description = "Admin only - Updates an existing policy")
+    @Operation(summary = "Cập nhật chính sách", description = "Chỉ dành cho Admin - Cập nhật chính sách hiện có")
     public ResponseEntity<APIResponse<PolicyDto>> updatePolicy(@PathVariable Long id, @RequestBody PolicyDto dto) {
         try {
             PolicyDto updated = policyService.updatePolicy(id, dto);
@@ -92,7 +92,7 @@ public class PolicyController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Delete policy", description = "Admin only - Soft deletes a policy")
+    @Operation(summary = "Xóa chính sách", description = "Chỉ dành cho Admin - Xóa mềm một chính sách")
     public ResponseEntity<APIResponse<Void>> deletePolicy(@PathVariable Long id) {
         try {
             policyService.deletePolicy(id);

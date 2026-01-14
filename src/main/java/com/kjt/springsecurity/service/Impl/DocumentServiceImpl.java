@@ -7,7 +7,7 @@ import com.kjt.springsecurity.enums.DocumentStatus;
 import com.kjt.springsecurity.repository.DocumentRepository;
 import com.kjt.springsecurity.repository.UserRepository;
 import com.kjt.springsecurity.service.DocumentService;
-import com.kjt.springsecurity.service.PolicyService;
+import com.kjt.springsecurity.service.PolicyEvaluatorService;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -21,14 +21,14 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
-    private final PolicyService policyService;
+    private final PolicyEvaluatorService policyEvaluatorService;
 
     public DocumentServiceImpl(DocumentRepository documentRepository,
             UserRepository userRepository,
-            PolicyService policyService) {
+            PolicyEvaluatorService policyEvaluatorService) {
         this.documentRepository = documentRepository;
         this.userRepository = userRepository;
-        this.policyService = policyService;
+        this.policyEvaluatorService = policyEvaluatorService;
     }
 
     @Override
@@ -140,12 +140,12 @@ public class DocumentServiceImpl implements DocumentService {
             return false;
         }
 
-        return policyService.checkAccess("DOCUMENT", action, currentUser.getId(), document.getId());
+        return policyEvaluatorService.checkDocumentAccess(currentUser, document, action);
     }
 
     private DocumentDto toDto(Document document) {
         DocumentDto dto = new DocumentDto();
-        dto.setId(document.getId());
+//        dto.setId(document.getId());
         dto.setTitle(document.getTitle());
         dto.setContent(document.getContent());
         dto.setOwnerId(document.getOwner().getId());

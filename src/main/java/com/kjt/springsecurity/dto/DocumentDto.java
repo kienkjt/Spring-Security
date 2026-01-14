@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DocumentDto {
-    private Long id;
+//    private Long id;
     private String title;
     private String content;
     private Long ownerId;

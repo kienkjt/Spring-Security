@@ -34,7 +34,7 @@ public class AuthController {
     public ResponseEntity<APIResponse> login(@RequestBody LoginDto loginDto) {
         try {
             AuthResponse response = authService.login(loginDto);
-            return ResponseEntity.ok(APIResponse.success(response, "Login successfully"));
+            return ResponseEntity.ok(APIResponse.success(response, "Đăng nhập thành công"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(APIResponse.createFailureResponse("Login failed: " + e.getMessage()));

@@ -24,12 +24,12 @@ public class DocumentController {
     }
 
     @PostMapping
-    @Operation(summary = "Create a new document", description = "Creates a document owned by the current user")
+    @Operation(summary = "Tạo tài liệu mới", description = "Tạo tài liệu do người dùng hiện tại sở hữu")
     public ResponseEntity<APIResponse<DocumentDto>> createDocument(@RequestBody DocumentDto dto) {
         try {
             DocumentDto created = documentService.createDocument(dto);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(APIResponse.success(created, "Document created successfully"));
+                    .body(APIResponse.success(created, "Tài liệu được tạo thành công"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(APIResponse.createFailureResponse(e.getMessage()));
@@ -37,11 +37,11 @@ public class DocumentController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get document by ID", description = "Retrieves a document if ABAC policies allow")
+    @Operation(summary = "Lấy tài liệu theo ID", description = "Truy xuất tài liệu nếu chính sách ABAC cho phép")
     public ResponseEntity<APIResponse<DocumentDto>> getDocument(@PathVariable Long id) {
         try {
             DocumentDto document = documentService.getDocument(id);
-            return ResponseEntity.ok(APIResponse.success(document, "Document retrieved successfully"));
+            return ResponseEntity.ok(APIResponse.success(document, "Tài liệu được truy xuất thành công"));
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(APIResponse.createFailureResponse("Access denied: " + e.getMessage()));
@@ -51,8 +51,8 @@ public class DocumentController {
         }
     }
 
-    @GetMapping
-    @Operation(summary = "Get all accessible documents", description = "Returns documents filtered by ABAC policies")
+    @GetMapping("/all")
+    @Operation(summary = "Lấy tất cả tài liệu có thể truy cập", description = "Trả về các tài liệu được lọc theo chính sách ABAC")
     public ResponseEntity<APIResponse<List<DocumentDto>>> getAllDocuments() {
         try {
             List<DocumentDto> documents = documentService.getAllDocuments();
@@ -65,12 +65,11 @@ public class DocumentController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update document", description = "Updates a document if ABAC policies allow")
-    public ResponseEntity<APIResponse<DocumentDto>> updateDocument(@PathVariable Long id,
-            @RequestBody DocumentDto dto) {
+    @Operation(summary = "Cập nhật tài liệu", description = "Cập nhật tài liệu nếu chính sách ABAC cho phép")
+    public ResponseEntity<APIResponse<DocumentDto>> updateDocument(@PathVariable Long id, @RequestBody DocumentDto dto) {
         try {
             DocumentDto updated = documentService.updateDocument(id, dto);
-            return ResponseEntity.ok(APIResponse.success(updated, "Document updated successfully"));
+            return ResponseEntity.ok(APIResponse.success(updated, "Tài liệu được cập nhật thành công"));
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(APIResponse.createFailureResponse("Access denied: " + e.getMessage()));
@@ -81,11 +80,11 @@ public class DocumentController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete document", description = "Soft deletes a document if ABAC policies allow")
+    @Operation(summary = "Xóa tài liệu", description = "Xóa mềm tài liệu nếu chính sách ABAC cho phép")
     public ResponseEntity<APIResponse<Void>> deleteDocument(@PathVariable Long id) {
         try {
             documentService.deleteDocument(id);
-            return ResponseEntity.ok(APIResponse.success(null, "Document deleted successfully"));
+            return ResponseEntity.ok(APIResponse.success(null, "Tài liệu được xóa thành công"));
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(APIResponse.createFailureResponse("Access denied: " + e.getMessage()));

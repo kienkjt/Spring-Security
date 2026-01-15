@@ -10,4 +10,6 @@ public interface RefreshTokenService {
     RefreshToken findByToken(String token);
 
     void deleteByUserId(Long userId);
+
+    void deleteByToken(String token);
 }

@@ -9,6 +9,7 @@ import com.kjt.springsecurity.repository.UserRepository;
 import com.kjt.springsecurity.security.JwtTokenProvider;
 import com.kjt.springsecurity.service.AuthService;
 import com.kjt.springsecurity.service.RefreshTokenService;
+import com.kjt.springsecurity.service.TokenBlacklistService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -22,138 +23,176 @@ import java.util.stream.Collectors;
 
 @Service
 public class AuthServiceImpl implements AuthService {
-    private final UserRepository userRepository;
-    private final AuthenticationManager authenticationManager;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final PasswordEncoder passwordEncoder;
-    private final RefreshTokenService refreshTokenService;
+        private final UserRepository userRepository;
+        private final AuthenticationManager authenticationManager;
+        private final JwtTokenProvider jwtTokenProvider;
+        private final PasswordEncoder passwordEncoder;
+        private final RefreshTokenService refreshTokenService;
+        private final TokenBlacklistService tokenBlacklistService;
 
-    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager,
-            JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder,
-            RefreshTokenService refreshTokenService) {
-        this.userRepository = userRepository;
-        this.authenticationManager = authenticationManager;
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.passwordEncoder = passwordEncoder;
-        this.refreshTokenService = refreshTokenService;
-    }
-
-    @Override
-    public void register(RegistrationDto registrationDto) {
-        if (registrationDto.getUsername() == null || registrationDto.getUsername().trim().isEmpty()) {
-            throw new IllegalArgumentException("Username không được để trống");
-        }
-        if (registrationDto.getPassword() == null || registrationDto.getPassword().trim().isEmpty()) {
-            throw new IllegalArgumentException("Password không được để trống");
+        public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager,
+                        JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder,
+                        RefreshTokenService refreshTokenService, TokenBlacklistService tokenBlacklistService) {
+                this.userRepository = userRepository;
+                this.authenticationManager = authenticationManager;
+                this.jwtTokenProvider = jwtTokenProvider;
+                this.passwordEncoder = passwordEncoder;
+                this.refreshTokenService = refreshTokenService;
+                this.tokenBlacklistService = tokenBlacklistService;
         }
 
-        if (!registrationDto.getPassword().equals(registrationDto.getConfirmPassword())) {
-            throw new IllegalArgumentException("Password và Confirm Password không khớp");
+        @Override
+        public void register(RegistrationDto registrationDto) {
+                if (registrationDto.getUsername() == null || registrationDto.getUsername().trim().isEmpty()) {
+                        throw new IllegalArgumentException("Username không được để trống");
+                }
+                if (registrationDto.getPassword() == null || registrationDto.getPassword().trim().isEmpty()) {
+                        throw new IllegalArgumentException("Password không được để trống");
+                }
+
+                if (!registrationDto.getPassword().equals(registrationDto.getConfirmPassword())) {
+                        throw new IllegalArgumentException("Password và Confirm Password không khớp");
+                }
+
+                User existingUser = userRepository.findByUsername(registrationDto.getUsername());
+                if (existingUser != null) {
+                        throw new IllegalArgumentException("Username đã tồn tại");
+                }
+
+                User user = new User();
+                user.setUsername(registrationDto.getUsername());
+                user.setPassword(passwordEncoder.encode(registrationDto.getPassword()));
+                user.setEmail(registrationDto.getEmail());
+                user.setIsActive(true);
+                user.setIsDeleted(false);
+                user.setCreatedAt(Instant.now());
+                user.setUpdatedAt(Instant.now());
+
+                userRepository.save(user);
         }
 
-        User existingUser = userRepository.findByUsername(registrationDto.getUsername());
-        if (existingUser != null) {
-            throw new IllegalArgumentException("Username đã tồn tại");
+        @Override
+        public AuthResponse login(LoginDto loginDto) {
+                Authentication authentication = authenticationManager.authenticate(
+                                new UsernamePasswordAuthenticationToken(loginDto.getUsername(),
+                                                loginDto.getPassword()));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                String jwt = jwtTokenProvider.generateToken(authentication);
+
+                // Extract user details
+                User user = userRepository.findByUsername(loginDto.getUsername());
+                if (user == null) {
+                        throw new RuntimeException("User not found");
+                }
+
+                // Create refresh token
+                RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+                Set<String> roles = authentication.getAuthorities().stream()
+                                .map(auth -> auth.getAuthority())
+                                .filter(a -> a.startsWith("ROLE_"))
+                                .collect(Collectors.toSet());
+
+                Set<String> permissions = authentication.getAuthorities().stream()
+                                .map(auth -> auth.getAuthority())
+                                .filter(a -> !a.startsWith("ROLE_"))
+                                .collect(Collectors.toSet());
+
+                return new AuthResponse(
+                                jwt,
+                                refreshToken.getToken(),
+                                user.getId(),
+                                user.getUsername(),
+                                user.getEmail(),
+                                roles,
+                                permissions);
         }
 
-        User user = new User();
-        user.setUsername(registrationDto.getUsername());
-        user.setPassword(passwordEncoder.encode(registrationDto.getPassword()));
-        user.setEmail(registrationDto.getEmail());
-        user.setIsActive(true);
-        user.setIsDeleted(false);
-        user.setCreatedAt(Instant.now());
-        user.setUpdatedAt(Instant.now());
+        @Override
+        public AuthResponse refreshToken(String refreshTokenStr) {
+                RefreshToken refreshToken = refreshTokenService.findByToken(refreshTokenStr);
+                refreshToken = refreshTokenService.verifyExpiration(refreshToken);
 
-        userRepository.save(user);
-    }
+                User user = refreshToken.getUser();
 
-    @Override
-    public AuthResponse login(LoginDto loginDto) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword()));
+                // REFRESH TOKEN ROTATION: Delete old refresh token
+                refreshTokenService.deleteByToken(refreshTokenStr);
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+                // Create new refresh token
+                RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId());
 
-        String jwt = jwtTokenProvider.generateToken(authentication);
+                // Load user details for authentication
+                org.springframework.security.core.userdetails.UserDetails userDetails = org.springframework.security.core.userdetails.User
+                                .builder()
+                                .username(user.getUsername())
+                                .password(user.getPassword())
+                                .authorities(user.getUserRoles().stream()
+                                                .flatMap(ur -> {
+                                                        var authorities = new java.util.ArrayList<org.springframework.security.core.GrantedAuthority>();
+                                                        authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                                                        ur.getRole().getName()));
+                                                        authorities.addAll(ur.getRole().getRolePermissions().stream()
+                                                                        .map(rp -> new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                                                                        rp.getPermission().getName()))
+                                                                        .toList());
+                                                        return authorities.stream();
+                                                })
+                                                .toList())
+                                .build();
 
-        // Extract user details
-        User user = userRepository.findByUsername(loginDto.getUsername());
-        if (user == null) {
-            throw new RuntimeException("User not found");
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
+
+                String newAccessToken = jwtTokenProvider.generateToken(authentication);
+
+                Set<String> roles = authentication.getAuthorities().stream()
+                                .map(auth -> auth.getAuthority())
+                                .filter(a -> a.startsWith("ROLE_"))
+                                .collect(Collectors.toSet());
+
+                Set<String> permissions = authentication.getAuthorities().stream()
+                                .map(auth -> auth.getAuthority())
+                                .filter(a -> !a.startsWith("ROLE_"))
+                                .collect(Collectors.toSet());
+
+                return new AuthResponse(
+                                newAccessToken,
+                                newRefreshToken.getToken(),
+                                user.getId(),
+                                user.getUsername(),
+                                user.getEmail(),
+                                roles,
+                                permissions);
         }
 
-        // Create refresh token
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        @Override
+        public void logout(String accessToken, String refreshToken) {
+                // Blacklist the access token
+                tokenBlacklistService.blacklistToken(accessToken, "User logout");
 
-        Set<String> roles = authentication.getAuthorities().stream()
-                .map(auth -> auth.getAuthority())
-                .filter(a -> a.startsWith("ROLE_"))
-                .collect(Collectors.toSet());
+                // Delete the refresh token
+                if (refreshToken != null && !refreshToken.isEmpty()) {
+                        try {
+                                refreshTokenService.deleteByToken(refreshToken);
+                        } catch (RuntimeException e) {
+                                // Refresh token might already be deleted or invalid, ignore
+                        }
+                }
+        }
 
-        Set<String> permissions = authentication.getAuthorities().stream()
-                .map(auth -> auth.getAuthority())
-                .filter(a -> !a.startsWith("ROLE_"))
-                .collect(Collectors.toSet());
+        @Override
+        public void logoutAllDevices(String accessToken) {
+                // Blacklist the current access token
+                tokenBlacklistService.blacklistToken(accessToken, "User logout from all devices");
 
-        return new AuthResponse(
-                jwt,
-                refreshToken.getToken(),
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                roles,
-                permissions);
-    }
-
-    @Override
-    public AuthResponse refreshToken(String refreshTokenStr) {
-        RefreshToken refreshToken = refreshTokenService.findByToken(refreshTokenStr);
-        refreshToken = refreshTokenService.verifyExpiration(refreshToken);
-
-        User user = refreshToken.getUser();
-
-        // Load user details for authentication
-        org.springframework.security.core.userdetails.UserDetails userDetails = org.springframework.security.core.userdetails.User
-                .builder()
-                .username(user.getUsername())
-                .password(user.getPassword())
-                .authorities(user.getUserRoles().stream()
-                        .flatMap(ur -> {
-                            var authorities = new java.util.ArrayList<org.springframework.security.core.GrantedAuthority>();
-                            authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority(
-                                    ur.getRole().getName()));
-                            authorities.addAll(ur.getRole().getRolePermissions().stream()
-                                    .map(rp -> new org.springframework.security.core.authority.SimpleGrantedAuthority(
-                                            rp.getPermission().getName()))
-                                    .toList());
-                            return authorities.stream();
-                        })
-                        .toList())
-                .build();
-
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                userDetails, null, userDetails.getAuthorities());
-
-        String newAccessToken = jwtTokenProvider.generateToken(authentication);
-
-        Set<String> roles = authentication.getAuthorities().stream()
-                .map(auth -> auth.getAuthority())
-                .filter(a -> a.startsWith("ROLE_"))
-                .collect(Collectors.toSet());
-
-        Set<String> permissions = authentication.getAuthorities().stream()
-                .map(auth -> auth.getAuthority())
-                .filter(a -> !a.startsWith("ROLE_"))
-                .collect(Collectors.toSet());
-
-        return new AuthResponse(
-                newAccessToken,
-                refreshTokenStr,
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                roles,
-                permissions);
-    }
+                // Get username from token
+                String username = jwtTokenProvider.getUsernameFromToken(accessToken);
+                User user = userRepository.findByUsername(username);
+                if (user != null) {
+                        // Delete all refresh tokens for this user
+                        refreshTokenService.deleteByUserId(user.getId());
+                }
+        }
 }

@@ -69,4 +69,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
         refreshTokenRepository.deleteByUser(user);
     }
+
+    @Override
+    @Transactional
+    public void deleteByToken(String token) {
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Refresh token không tồn tại!"));
+        refreshTokenRepository.delete(refreshToken);
+    }
 }

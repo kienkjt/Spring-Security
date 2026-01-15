@@ -3,6 +3,7 @@ package com.kjt.springsecurity.config;
 import com.kjt.springsecurity.security.JwtAuthenticationFilter;
 import com.kjt.springsecurity.security.JwtTokenProvider;
 import com.kjt.springsecurity.service.CustomUserDetailsService;
+import com.kjt.springsecurity.service.TokenBlacklistService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,10 +24,14 @@ public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public SecurityConfig(JwtTokenProvider jwtTokenProvider, CustomUserDetailsService customUserDetailsService) {
+    public SecurityConfig(JwtTokenProvider jwtTokenProvider,
+            CustomUserDetailsService customUserDetailsService,
+            TokenBlacklistService tokenBlacklistService) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.customUserDetailsService = customUserDetailsService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Bean
@@ -49,7 +54,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtTokenProvider, customUserDetailsService);
+        return new JwtAuthenticationFilter(jwtTokenProvider, customUserDetailsService, tokenBlacklistService);
     }
 
     @Bean
@@ -65,10 +70,9 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/webjars/**",
                                 "/auth/**",
-                                "/test/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                                "/test/**")
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 

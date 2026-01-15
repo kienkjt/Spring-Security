@@ -10,4 +10,8 @@ public interface AuthService {
     AuthResponse login(LoginDto loginDto);
 
     AuthResponse refreshToken(String refreshToken);
+
+    void logout(String accessToken, String refreshToken);
+
+    void logoutAllDevices(String accessToken);
 }

@@ -2,6 +2,7 @@ package com.kjt.springsecurity.controller;
 
 import com.kjt.springsecurity.dto.AuthResponse;
 import com.kjt.springsecurity.dto.LoginDto;
+import com.kjt.springsecurity.dto.RefreshTokenRequest;
 import com.kjt.springsecurity.dto.RegistrationDto;
 import com.kjt.springsecurity.service.AuthService;
 import com.kjt.springsecurity.util.APIResponse;
@@ -38,6 +39,17 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(APIResponse.createFailureResponse("Login failed: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<APIResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+        try {
+            AuthResponse response = authService.refreshToken(request.getRefreshToken());
+            return ResponseEntity.ok(APIResponse.success(response, "Token refreshed successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(APIResponse.createFailureResponse("Refresh token failed: " + e.getMessage()));
         }
     }
 

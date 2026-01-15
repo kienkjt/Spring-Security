@@ -6,5 +6,8 @@ import com.kjt.springsecurity.dto.RegistrationDto;
 
 public interface AuthService {
     void register(RegistrationDto registrationDto);
+
     AuthResponse login(LoginDto loginDto);
+
+    AuthResponse refreshToken(String refreshToken);
 }

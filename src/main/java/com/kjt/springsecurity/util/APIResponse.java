@@ -16,9 +16,6 @@ public class APIResponse<T> {
         return new APIResponse<>(true, message, data);
     }
 
-    public static <T> APIResponse<T> createSuccessResponse(String message, T data) {
-        return new APIResponse<>(true, message, data);
-    }
     public static <T> APIResponse<T> createFailureResponse(String message) {
         return new APIResponse<>(false, message, null);
     }

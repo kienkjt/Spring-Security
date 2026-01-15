@@ -66,6 +66,12 @@ public class PolicyEvaluatorServiceImpl implements PolicyEvaluatorService {
         if (expectedValue instanceof String) {
             String expected = (String) expectedValue;
 
+            // Handle dynamic references (e.g., "resource.ownerId")
+            if (expected.startsWith("user.") || expected.startsWith("resource.")) {
+                Object resolvedExpectedValue = getAttributeValue(expected, user, document);
+                return resolvedExpectedValue != null && resolvedExpectedValue.equals(actualValue);
+            }
+
             // Handle comparison operators
             if (expected.startsWith(">=")) {
                 return compareNumeric(actualValue, expected.substring(2).trim(), ">=");
